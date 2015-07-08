@@ -37,10 +37,20 @@ Update: It turns out the method only sniffs frames which are broadcast or direct
 This can be thought of as a proof of concept, but there is still
 a lot to work on. We don't know if we'll have the patience or ability to do so...
 
+REVERSE_ENGINEERING:
+I have started some work on reverse-engineering the wifi stack of the ESP8266.
+Currently I have been focusing on the libpp.a library, and have decompiled
+most of the important functions from wdev.c, and started a little bit on lmac.c
+
+This is a tedious and error-prone process, so there might be mistakes creeping
+here and there. Please let me know if you find something interesting.
+
 
 NOTES:
 
 This program requires a modified libnet80211 and libpp library, which we called libnet80211_2.a and libpp2.a.
+The modified libraries can be seen in the lib/ folder.
+
 The modified net80211 library has its symbol table changed so that all references to ppTxPkt
 are replaced with a dummy function called 'aaTxPkt' defined in user_main.c.
 A simple way to do this is to go in the /opt/esp_open_sdk/sdk/lib/ folder, and do
