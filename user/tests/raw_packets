@@ -1,0 +1,87 @@
+#include "netif.h"
+#include "pbuf.h"
+#include "osapi.h"
+
+#define STATION_IF	0x00
+#define STATION_MODE	0x01
+
+#define SOFTAP_IF	0x01
+#define SOFTAP_MODE	0x02
+
+extern void ICACHE_FLASH_ATTR ppTxPkt(void *);
+
+static bool called = false;
+ETSTimer timer;
+
+void ICACHE_FLASH_ATTR send_paket(void *arg)
+{
+	struct netif *ifp;
+	struct pbuf *pb;
+	err_t rc;
+	char header[] = {0xff};
+	char payload[] = {'W', 'A', 'S', 'S', 'U', 'P', ' ', 'P', 'E', 'O', 'P', 'L', 'E', '?', '$'};
+	char packet[sizeof header + sizeof payload];
+
+	os_memcpy(packet, header, sizeof header);
+	os_memcpy(packet + sizeof header, payload, sizeof payload);
+
+	ifp = (struct netif *)eagle_lwip_getif(SOFTAP_IF);
+	((uint32 *)(ifp->state))[11] = 5;
+
+	pb = pbuf_alloc(PBUF_LINK, sizeof packet, PBUF_RAM);
+
+	ets_uart_printf("pbuf_alloc\n");
+
+	if (pb == NULL)
+		ets_uart_printf("pbuf_alloc failed.\n");
+
+	ets_uart_printf("pbuf_take\n");
+	if (pbuf_take(pb, packet, sizeof packet) != ERR_OK)
+		ets_uart_printf("pbuf_take failed.\n");
+
+	called = true;
+	if (rc = ieee80211_output_pbuf(ifp, pb))
+		ets_uart_printf("ieee80211_output_pbuf failed: rc = %d\n", rc);
+	else
+		ets_uart_printf("greeeaaat sucess!\n");
+
+	called = false;
+	pbuf_free(pb);
+}
+
+void ICACHE_FLASH_ATTR aaTxPkt(void *a)
+{
+	int i;
+	char *b;
+	
+	if (called) {
+		b = ((char **)a)[4];
+		ets_uart_printf("%p:\n", b);
+
+		for (i = 0; i < 104; i++)
+			ets_uart_printf("%02x ", ((uint8 *)b)[i]);
+	
+		ets_uart_printf("\n\n");
+//		for (i = 0; i < 47; i++)
+//			b[i] = '\xde';
+	}
+
+	ppTxPkt(a);
+}
+
+void ICACHE_FLASH_ATTR init_done()
+{
+	int i;
+
+	os_timer_disarm(&timer);
+	os_timer_setfn(&timer, send_paket, NULL);
+	os_timer_arm(&timer, 1000, 1);
+}
+
+void ICACHE_FLASH_ATTR user_init()
+{
+	uart_div_modify(0, UART_CLK_FREQ / 115200);
+	wifi_set_opmode(SOFTAP_MODE);
+	wifi_station_set_auto_connect(0);
+	system_init_done_cb(init_done);
+}

@@ -1,0 +1,7 @@
+By experimentation and debugging, I found out some info
+on the structure of the ppTxPkt arguments.
+
+From what I can understand, ppTxPkt takes one pointer to a struct of some kind.
+This struct contains various pointers. The first pointer points to the pbuf struct
+passed to the ieee80211_output_pbuf function. The 5th 4-byte group is a pointer to
+the actual IEEE-802.11 payload data.

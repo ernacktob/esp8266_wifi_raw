@@ -1,0 +1,47 @@
+#include "netif.h"
+#include "pbuf.h"
+
+#define STATION_IF	0x00
+#define STATION_MODE	0x01
+
+#define HOSTAP_IF	0x01
+#define HOSTAP_MODE	0x02
+
+void ICACHE_FLASH_ATTR init_done()
+{
+	struct netif *ifp;
+	struct pbuf *pb;
+	err_t rc;
+	char payload[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 'k', 'a', 'w', 'q'};
+
+	ifp = (struct netif *)eagle_lwip_getif(HOSTAP_IF);
+	pb = pbuf_alloc(PBUF_LINK, 100, PBUF_RAM);
+
+	ets_uart_printf("pbuf_alloc\n");
+
+	if (pb == NULL)
+		ets_uart_printf("pbuf_alloc failed.\n");
+
+	ets_uart_printf("pbuf_take\n");
+	if (pbuf_take(pb, payload, 18) != ERR_OK)
+		ets_uart_printf("pbuf_take failed.\n");
+
+	ets_uart_printf("state + 44: 0x%08x\n", *((uint32 *)((uint8 *)(ifp->state) + 44)));
+	ets_uart_printf("pbuf: %p\n", pb);
+	ets_uart_printf("checker(?): %p\n", *((uint32 *)((uint8 *)(ifp->state) + 160)));
+	ets_uart_printf("node(?): %p\n", *((uint32 *)((uint8 *)(ifp->state) + 120)));
+	ets_uart_printf("$a4: 0x%04x\n", *(uint16 *)(*((uint32 *)((uint8 *)(ifp->state) + 120))) + 26);
+	ets_uart_printf("$a5: 0x%08x\n", *(uint32 *)(*((uint32 *)((uint8 *)(ifp->state) + 120))) + 8);
+
+	if (rc = ieee80211_output_pbuf(ifp, pb))
+		ets_uart_printf("ieee80211_output_pbuf failed: rc = %d\n", rc);
+	else
+		ets_uart_printf("greeeaaat sucess!\n");
+}
+
+void ICACHE_FLASH_ATTR user_init()
+{
+	wifi_set_opmode(HOSTAP_MODE);
+	system_init_done_cb(init_done);	
+	uart_div_modify(0, UART_CLK_FREQ / 115200);
+}
