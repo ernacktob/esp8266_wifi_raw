@@ -35,6 +35,7 @@ void ICACHE_FLASH_ATTR send_packet(void *arg)
 	os_sprintf(packet + 4, "%s%s%s%s%s", "HELLO WORLD!", "HELLO WORLD!", "HELLO WORLD!", "HELLO WORLD!", "HaLLO w0RLD!");
 
 	wifi_send_raw_packet(packet, sizeof packet);
+	wifi_set_channel(1);
 }
 
 void ICACHE_FLASH_ATTR my_recv_cb(struct RxPacket *pkt)
@@ -110,7 +111,7 @@ void ICACHE_FLASH_ATTR init_done()
 	// Select a phy 802.11 b/g/n etc. and a channel 
 	// in order to receive packets.
 	// Note: ESP8266 does not appear to support 5GHz.
-	wifi_set_channel(11);
+	wifi_set_channel(1);
 	wifi_set_phy_mode(2);
 	/* Note: it appears the channel might get reset to default (6)
 		 after a wifi_set_opmode call (maybe, we aren't sure

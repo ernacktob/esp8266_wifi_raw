@@ -61,7 +61,7 @@ err_t ieee80211_output_pbuf(struct netif *netif, struct pbuf *pbuf)
 
 	number = $a3;
 
-	if ((*0x40253b20)() == 0)
+	if ((*0x40253b20)($a2, $a3) == 0)	/* _0x40253c68 */
 		return 1;
 
 	*((uint32 *)($a13 + 120)) = $a12;	/* *(uint32 *)(netif->state + 120) = cnx_node_search() ?? */

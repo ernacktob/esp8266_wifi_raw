@@ -8,4 +8,4 @@ until sudo -E env "PATH=$PATH" make flash ESPPORT=$PORT; do
 	sleep 1
 done
 
-screen $PORT 115200
+sudo screen $PORT 115200
