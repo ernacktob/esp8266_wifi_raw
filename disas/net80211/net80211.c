@@ -45,9 +45,9 @@ struct esf_buf *ieee80211_getmgtframe(uint8 **frm, uint32 headroom, uint32 pktle
 		return NULL;
 
 	if (len < MINCLSIZE)
-		ebuf = esf_buf_alloc(NULL, 5, len);
+		ebuf = esf_buf_alloc(NULL, 5);
 	else
-		ebuf = esf_buf_alloc(NULL, 4, len);
+		ebuf = esf_buf_alloc(NULL, 4);
 
 	if (ebuf != NULL)
 		*frm = ebuf->pb->payload + headroom;

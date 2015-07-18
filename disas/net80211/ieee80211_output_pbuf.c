@@ -67,7 +67,8 @@ err_t ieee80211_output_pbuf(struct netif *netif, struct pbuf *pbuf)
 	*((uint32 *)($a13 + 120)) = $a12;	/* *(uint32 *)(netif->state + 120) = cnx_node_search() ?? */
 	res = (*0x4025328c)($a12, $a14)		/* (*0x4025328c)(cnx_node, pbuf) */
 
-	if (($a3 = $a2 = (**0x4025054c)(pbuf, 1, 0)) == 0)	/* (*0x40104af0) esf_buf_alloc(pbuf, 1, 0) */
+	$a4 = 0;
+	if (($a3 = $a2 = (**0x4025054c)(pbuf, 1)) == 0)	/* (*0x40104af0) esf_buf_alloc(pbuf, 1) */
 		return 1;
 
 	$a5 = 4;
