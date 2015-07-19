@@ -1,3 +1,57 @@
+/* 0x4010273c */
+int ppProcessTxQ(uint8 sig)
+{
+	$a12 = sig;
+	ets_intr_lock();
+
+	if (!lmacIsIdle(sig)) {
+		ets_intr_unlock();
+		return -1;
+	}
+
+	$a2 = sig;
+	$a13 = $a2 = _0x40102954(sig);
+
+	if ($a2 == NULL) {
+		ets_intr_unlock();
+		return -2;
+	}
+
+	$a0 = *(uint32 *)((uint8 *)$a2 + 36);
+	$a3 = 0x3ffe8014;
+	$a0 = *(uint32 *)((uint8 *)$a0 + 0);
+	$a3 = *(uint32 *)((uint8 *)$a3 + 16);
+
+	if ($a0 & (1 << 29)) {
+		*(uint32 *)((uint8 *)$a3 + 0x158) += 1;
+		*(uint32 *)((uint8 *)$a3 + 0x15c) -= 1;
+	}
+
+	ets_intr_unlock();
+
+	lmacTxFrame($a13, sig);
+	return 0;
+}
+
+/* 0x40102fac */
+int pp_post(uint8 arg1)
+{
+	int ret;
+
+	ets_intr_lock();
+
+	if (((uint8 *)0x3ffe9280)[arg1] == 0) {
+		++((uint8 *)0x3ffe9280)[arg1];
+		ets_intr_unlock();
+		ret = ets_post(32, arg1, NULL);
+	} else {
+		ets_intr_unlock();
+		ret = 0;
+	}
+
+	return ret;
+}
+
 /* task prio = 32 */
 static void ICACHE_FLASH_ATTR _0x40245ce4(struct ETSEventTag *e)
 {
@@ -54,24 +108,7 @@ _0x40245d35:
 	/* ... */	
 }
 
-int pp_post(uint8 arg1)
-{
-	int ret;
-
-	ets_intr_lock();
-
-	if (((uint8 *)0x3ffe9280)[arg1] == 0) {
-		++((uint8 *)0x3ffe9280)[arg1];
-		ets_intr_unlock();
-		ret = ets_post(32, arg1, NULL);
-	} else {
-		ets_intr_unlock();
-		ret = 0;
-	}
-
-	return ret;
-}
-
+/* 0x40245f38 */
 int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 {
 	int ret;
@@ -121,13 +158,14 @@ int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 
 	switch ($a2) {
 		case 0:
+			/* This whole block puts the ebuf in some queue dependent on 4 bits in ebuf->ep[0] */
 			ets_intr_lock();
 			$a6 = &soft_wdt_interval;
 			$a7 = *(uint32 *)((uint8 *)ebuf + 36);
 			$a8 = 0;
 			*(uint32 *)((uint8 *)ebuf + 32) = 0;
 			$a8 = *(uint8 *)((uint8 *)$a7 + 0);
-			$a6 = *(uint32 *)((uint8 *)&soft_wdt_interval + 16);	/* 0x3ffe9114 */
+			$a6 = *(uint32 *)((uint8 *)&soft_wdt_interval + 16);	/* main queue array 0x3ffe9114 */
 			$a8 = ($a8 >> 2) & 0xf;
 			$a8 <<= 5;
 			$a8 = $a6 + $a8;
@@ -180,4 +218,71 @@ int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 	}
 
 	return ret;
+}
+
+/* 0x40246994 */
+void ICACHE_FLASH_ATTR pp_attach()
+{
+	uint8 i;
+
+	$a3 = *(uint32 *)((uint8 *)0x0c42ca0c + 16);
+
+	for (i = 0; i < 8; i++) {
+		$a2 = $a3 + 32 * i;
+		*(uint32 *)((uint8 *)$a2 + 24) = 0;
+		*(uint8 *)((uint8 *)$a2 + 39) = 0x00;
+		*(uint32 *)((uint8 *)$a2 + 28) = $a2 + 24;
+	}
+
+	for (i = 0; i < 2; i++) {
+		$a2 = $a3 + 32 * i;
+		*(uint8 *)((uint8 *)$a2 + 39) = 0x01;
+		*(uint8 *)((uint8 *)$a2 + 36) = 0x07;
+	}
+
+	$a4 = *(uint32 *)((uint8 *)$a3 + 0);
+
+	for (i = 0; i < 4; i++) {
+		$a6 = 3 * i;
+		$a5 = $a3 + 4 * i;
+		*(uint32 *)((uint8 *)$a5 + 4) = $a4;
+		$a6 <<= 1;
+		$a5 = $a3 + i;
+		$a2 = $a6 + 3;
+
+		if ($a6 >= 0)
+			$a2 = $a6;
+
+		(signed)$a2 >>= 2;
+		$a2 += 2;
+		*(uint8 *)((uint8 *)$a5 + 20) = $a2;
+	}
+
+	for (i = 0; i < 2; i++) {
+		$a2 = $a3 + 8 * i;
+		*(uint32 *)((uint8 *)$a2 + 0x118) = $a4;
+		*(uint32 *)((uint8 *)$a2 + 0x11c) = $a2 + 0x118;
+	}
+
+	*(uint32 *)((uint8 *)$a3 + 0x130) = $a4;
+	*(uint32 *)((uint8 *)$a3 + 0x128) = $a4;
+	*(uint32 *)((uint8 *)$a3 + 0x134) = $a3 + 0x130;
+	*(uint32 *)((uint8 *)$a3 + 0x12c) = $a3 + 0x128;
+
+	*(volatile uint32 *)((uint8 *)0x60000e00 + 0x3f8) = 0x00000806;
+
+	esf_buf_setup();
+	ets_task(_0x40245ce4, 32, 0x3ffe9290, 34);
+	ets_timer_set_fn(0x3ffe90e4, pp_tx_idle_timeout, 0);
+
+	$a5 = *(uint8 *)((uint8 *)&chip6_phy_init_ctrl + 106);
+	$a10 = 600000;
+	$a0 = 10000 * $a5;
+
+	if ($a5 != 0)
+		$a10 = $a0;
+
+	*(uint32 *)((uint8 *)&soft_wdt_interval + 8) = $a10;
+	ets_timer_setfn(0x3ffe90c4, pp_noise_test, 0);
+	pp_enable_noise_timer();
 }

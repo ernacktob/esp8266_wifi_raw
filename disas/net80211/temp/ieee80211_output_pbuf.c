@@ -91,7 +91,7 @@ err_t ieee80211_output_pbuf(struct netif *netif, struct pbuf *pbuf)
 			*((uint8 *)($a2 + 14)) = $a0;	/* ((uint8 *)(*((uint32 *)(esf_buf_alloc_result + EP_OFFSET))))[14] = 8 */
 	}
 
-	$a2 = (*0x40252fe8)($a13);	/* (*0x40252fe8)(netif->state) */
+	$a2 = (*0x40252fe8)($a13);	/* (*0x40252fe8)(netif->state) */	/* 0x40253130 */
 	$a5 = res;
 
 	if ($a2 == 0)	/* result from (*0x40252fe8($a13)) */

@@ -1,0 +1,34 @@
+call_user_start
+call_user_start_local
+_0x401004e4	<call_user_start_local+0x2ac>
+_0x40240368
+_0x40240024	<_irom0_text_start+0x24>
+
+This function calls:
+	ieee80211_phy_init
+	lmacInit
+	wDev_Initialize
+	pp_attach
+	ieee80211_ifattach
+	pm_attach
+	cnx_attach
+	wDevEnableRx
+
+
+When sending packets:
+	ieee80211_output_pbuf
+		ebuf = esf_buf_alloc(pbuf, 1)
+	ppTxPkt(ebuf)
+	pp_post
+	task with priority 32
+	ppProcessTxQ
+	lmacTxFrame
+	wDev_EnableTransmit
+
+When receiving frames:
+	wDev_ProcessFiq	(created by ets_isr_attach in _0x40240024)
+		erxbuf = esf_rx_buf_alloc(...)
+	lmacRxDone(erxbuf)
+	pp_post(5)
+	task with priority 32
+	sta_input / hostap_input etc.

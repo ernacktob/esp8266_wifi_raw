@@ -1,11 +1,22 @@
 /* 0x401011e4 */
-void lmacIsActive()
+bool lmacIsActive()
 {
 	/* 0x3ffe8e50 = &lmacConfMib - 0x4 */
 	if (((uint8 *)&lmacConfMib)[-0x4] < 8)
-		return 1;
+		return true;
 
-	return 0;
+	return false;
+}
+
+/* 0x401011f8 */
+bool lmacIsIdle(uint8 sig)
+{
+	$a4 = *(uint8 *)((uint8 *)0x3ffe8e80 + 36 * $a2 + 17);
+
+	if ($a4 == 0)
+		return true;
+
+	return false;
 }
 
 /* 0x40102398 */
