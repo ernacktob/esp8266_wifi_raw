@@ -8,6 +8,12 @@ struct ieee80211_frame {
 	uint8 i_data[];
 };
 
+struct _ebuf_sub1 {
+	uint8 data[24];
+	/* byte 10 increases by 8 for a 1 byte increase in the length. */
+	/* bytes 16 to 19 appear to be a timestamp in microseconds */
+};
+
 struct esf_buf {
 	struct pbuf *pb1;			/*  0 */
 	struct pbuf *pb2;			/*  4 */
