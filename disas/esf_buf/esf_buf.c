@@ -16,8 +16,8 @@ struct esf_buf {
 	uint8 flg;				/* 14 */
 	uint8 pad1[1];
 	struct ieee80211_frame *e_data;		/* 16 */
-	uint8 pad2[2];
-	uint16 len;				/* 22 */
+	uint16 len1;				/* 20 */
+	uint16 len2;				/* 22 */
 	uint8 pad3[4];
 	uint32 type1;				/* 28 */
 	struct esf_buf *next;			/* 32 */

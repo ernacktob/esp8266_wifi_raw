@@ -19,6 +19,11 @@ bool lmacIsIdle(uint8 sig)
 	return false;
 }
 
+static void _0x401012ac()
+{
+	// stub. Might be important
+}
+
 /* 0x40102398 */
 void lmacProcessRtsStart(uint8 arg1)
 {
