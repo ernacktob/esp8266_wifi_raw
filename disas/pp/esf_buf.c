@@ -1,23 +1,30 @@
 struct ieee80211_frame {
-	uint8 i_fc[2];
-	uint8 i_dur[2];
+	uint16 i_fc;
+	uint16 i_dur;
 	uint8 i_addr1[6];
 	uint8 i_addr2[6];
 	uint8 i_addr3[6];
-	uint8 i_seq[2];
-	uint8 i_data[];
+	uint16 i_seq;
 };
 
 struct _ebuf_sub1 {
 	uint8 data[24];
-	/* byte 10 increases by 8 for a 1 byte increase in the length. */
+	/* bytes 10 and 11 are set by RC_GetCtsTime, seem to increase by 8 per unit length */
 	/* bytes 16 to 19 appear to be a timestamp in microseconds */
+};
+
+/* Might be a wdev_ctrl_sub1 */
+struct not_pbuf {
+	unsigned len1:12;	/*  0b */
+	unsigned len2:12;	/* 12b */
+	unsigned pad1:8;	/* 24b */
+	void *data;		/*   4 */
 };
 
 struct esf_buf {
 	struct pbuf *pb1;			/*  0 */
-	struct pbuf *pb2;			/*  4 */
-	struct pbuf *pb3;			/*  8 */
+	struct not_pbuf *np1; /* Not a pbuf! */	/*  4 */
+	struct not_pbuf *np2; /* Not a pbuf! */	/*  8 */
 	uint16 cnt1;				/* 12 */
 	uint8 flg;				/* 14 */
 	uint8 pad1[1];
@@ -25,7 +32,7 @@ struct esf_buf {
 	uint16 len1;				/* 20 */
 	uint16 len2;				/* 22 */
 	uint8 pad3[4];
-	uint32 type1;				/* 28 */
+	void *type1;				/* 28 */
 	struct esf_buf *next;			/* 32 */
 	struct _ebuf_sub1 *ep;			/* 36 */
 };

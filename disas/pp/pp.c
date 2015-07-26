@@ -33,6 +33,21 @@ int ppProcessTxQ(uint8 sig)
 	return 0;
 }
 
+/* 0x40102878 */
+void ppEnqueueTxDone(struct esf_buf *ebuf)
+{
+	if (ebuf == NULL) {
+		ets_printf("%s %u\n", "pp.c", 2204);
+		while (1);
+	}
+
+	$a4 = *(struct esf_buf ***)((uint8 *)0x3ffe9114 + 0x12c);
+	ebuf->next = NULL;
+
+	*(struct esf_buf **)$a4 = ebuf;
+	*(struct esf_buf ***)((uint8 *)0x3ffe9114 + 0x12c) = &ebuf->next;
+}
+
 /* <ppEnqueueRxq+0x18> */
 static struct esf_buf *_0x401028c4(uint8 arg1)
 {
@@ -216,6 +231,21 @@ static void _0x40102a4c(uint8 sig)
 	// stub
 }
 
+/* <ppEnqueueRxq+0x55c> */
+static void _0x40102e08(struct esf_buf *ebuf)
+{
+	
+}
+
+/* 0x40102f88 */
+void ppDiscardMPDU(struct esf_buf *ebuf)
+{
+	ebuf->ep->data[14] = 0;
+	ebuf->ep->data[15] = 4;
+	ppEnqueueTxDone(ebuf);
+	pp_post(4);
+}
+
 /* 0x40102fac */
 int pp_post(uint8 arg1)
 {
@@ -233,6 +263,29 @@ int pp_post(uint8 arg1)
 	}
 
 	return ret;
+}
+
+/* 0x40103094 */
+void ppCalFrameTimes(struct esf_buf *ebuf)
+{
+	$a2 = *(uint32 *)(ebuf->ep->data + 0);
+
+	if ($a2 & (1 << 25))
+		$a2 = RC_GetBlockAckTime(ebuf->ep->data[8]);
+	else if (($a2 & (1 << 16)) || ($a2 & (1 << 7)))
+		$a2 = 0;
+	else
+		$a2 = RC_GetAckTime(ebuf->ep->data[8]);
+
+	$a5 = *(uint16 *)(ebuf->ep->data + 6) & 0x7f;
+	$a6 = ($a2 & 0x01ff) << 7;
+	$a5 |= $a6;
+	*(uint16 *)(ebuf->ep->data + 6) = $a5;
+
+	$a4 = *(uint16 *)(ebuf->ep->data + 6) >> 7;
+
+	$a2 = RC_GetCtsTime(ebuf->ep->data[8], ebuf->len1 + ebuf->len2, $a4);
+	*(uint16 *)(ebuf->ep->data + 10) = $a2;
 }
 
 /* task prio = 32 */
@@ -291,17 +344,86 @@ _0x40245d35:
 	/* ... */	
 }
 
+/* <ppPeocessRxPktHdr+0x1d4> */
+static void _0x40245e38(struct esf_buf *ebuf)
+{
+	$a7 = ebuf->e_data;
+	$a3 = ebuf->e_data.i_addr1[0];
+	$a0 = *(uint32 *)(ebuf->ep->data + 0);
+
+	/* IEEE80211_IS_MULTICAST(ebuf->e_data.i_addr1) */
+	if ($a3 & 0x01) {
+		$a3 = *(uint32 *)(ebuf->ep->data + 0) >> 6;
+		$a0 = *(uint32 *)(ebuf->ep->data + 0) & 0x3f;
+		$a3 |= 0x02;
+		$a3 <<= 6;
+		$a0 |= $a3;
+		*(uint32 *)(ebuf->ep->data + 0) = $a0;
+	}
+
+	$a4 = ebuf->e_data.i_fc & 0x0c;	/* Type in frame control */
+	$a6 = ebuf->e_data.i_fc & 0xf0;	/* Subtype in frame control */
+
+	if ($a4 == 0x08) {
+		/* Type = 2 (Data frame) */
+		$a8 = *(uint32 *)(ebuf->ep->data + 0) & 0x3f;
+		$a3 = 0x08;
+		$a0 = *(uint32 *)(ebuf->ep->data + 0) >> 6;
+		$a0 |= $a3;
+		$a0 <<= 6;
+		$a0 |= $a8;
+		*(uint32 *)(ebuf->ep->data + 0) = $a0;
+
+		if ($a6 == 0x40 || $a6 == 0xc0) {
+			/* Subtype = 4 (Null) or 12 (QoS Null) */
+			$a6 = $a0 & 0x3f;
+			$a0 >>= 6;
+			$a0 &= 0x03fffff7;
+			$a0 <<= 6;
+			$a0 |= $a6;
+			*(uint32 *)(ebuf->ep->data + 0) = $a0;
+		}
+	} else if ($a4 == 0x00) {
+		/* Type = 0 (Management frame) */
+		if ($a6 == 0x80) {
+			/* Subtype = 8 (Beacon) */
+			$a9 = $a0 & 0x3f;
+			$a10 = $a4 | (1 << 20);
+			$a10 <<= 6;
+			$a9 |= $a10;
+			*(uint32 *)(ebuf->ep->data + 0) = $a9;
+			$a6 = *(uint32 *)((uint8 *)0x3ffe9114 + 0x15c);
+			$a6 += 1;
+			*(uint32 *)((uint8 *)0x3ffe9114 + 0x15c) = $a6;
+
+			if ($a6 >= 6)
+				os_printf_plus("y");
+
+			$a0 = *(uint32 *)(ebuf->ep->data + 0);
+		} else if ($a6 == 0x40) {
+			/* Subtype = 4 (Probe Request) */
+			if (!($a0 & (1 << 7))) {
+				$a3 = 0x00000800;
+				$a0 &= 0x3f;
+				$a3 = $a4 | (1 << 11);
+				$a3 <<= 6;
+				$a0 |= $a3;
+				*(uint32 *)(ebuf->ep->data + 0) = $a0;
+			}
+		}
+	}
+
+	$a4 = $a0 >> 6;
+
+	if ($a4 & (1 << 18))
+		((uint8 *)ebuf->np1->data)[3] = (uint8)(ebuf->e_data.i_seq >> 4);
+}
+
 /* 0x40245f38 */
 int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 {
-	int ret;
-
-	$a5 = *(uint32 *)((uint8 *)ebuf + 36);
-	$a12 = ebuf;
-	$a3 = *(uint8 *)((uint8 *)$a5 + 6);
-	$a0 = *(uint8 *)((uint8 *)$a5 + 4);
-	$a3 = ($a3 >> 4) & 0x7;
-	$a0 &= 0x0f;
+	$a0 = ebuf->ep->data[4] & 0x0f;
+	$a3 = (ebuf->ep->data[6] >> 4) & 0x07;
 
 	if ($a0 == 0 || $a0 == 3)
 		$a2 = 2;
@@ -317,89 +439,68 @@ int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 		while (1);
 	}
 
-	_0x40245e38(ebuf);
+	_0x40245e38(ebuf);	/* <ppPeocessRxPktHdr+0x1d4> */
 
-	if (_0x40246a94(ebuf) == 1) {
+	if (_0x40246a94(ebuf) == 1) {	/* <pp_attach+0x100> */
 		ets_intr_lock();
 		ppDiscardMPDU(ebuf);
 		ets_intr_unlock();
-		ret = 1;
 		return 1;
 	}
 
 	ets_intr_lock();
-	$a2 = *(uint32 *)((uint8 *)ebuf + 28);
-	$a3 = *(uint32 *)((uint8 *)ebuf + 36);
-	rcGetSched($a2, $a3);
+	rcGetSched(ebuf->type1, ebuf->ep);
 	ets_intr_unlock();
 
 	ppCalFrameTimes(ebuf);
 	_0x40102e08(ebuf);
 
-	$a5 = 0;
-	$a4 = &soft_wdt_interval;
-
 	switch ($a2) {
 		case 0:
-			/* This whole block puts the ebuf in some queue dependent on 4 bits in ebuf->ep[0] */
+			/* This whole block puts the ebuf in some queue dependent on 4 bits in ebuf->ep->data[0] */
 			ets_intr_lock();
-			$a6 = &soft_wdt_interval;
-			$a7 = *(uint32 *)((uint8 *)ebuf + 36);
-			*(uint32 *)((uint8 *)ebuf + 32) = 0;
-			$a8 = *(uint8 *)((uint8 *)$a7 + 0);
-			$a6 = *(uint32 *)((uint8 *)&soft_wdt_interval + 16);	/* main queue array 0x3ffe9114 */
-			$a8 = ($a8 >> 2) & 0xf;
-			$a8 <<= 5;
+			ebuf->next = NULL;
+
+			$a6 = *((uint32 *)0x3ffe9114);	/* main queue array (uint8 *)&soft_wdt_interval + 16 */
+			$a8 = ((ebuf->ep->data[0] >> 2) & 0x0f) * 32;
 			$a8 = $a6 + $a8;
 			$a8 = *(uint32 *)((uint8 *)$a8 + 28);
-			*(struct esf_buf *)((uint8 *)$a8 + 0) = ebuf;
-			$a7 = *(uint8 *)((uint8 *)$a7 + 0);
-			$a5 = (uint8 *)ebuf + 32;
-			$a7 = ($a7 >> 2) & 0xf;
-			$a7 <<= 5;
+			*(struct esf_buf **)((uint8 *)$a8 + 0) = ebuf;
+
+			$a7 = ((ebuf->ep->data[0] >> 2) & 0x0f) * 32;
 			$a6 += $a7;
-			*(uint32 *)((uint8 *)$a6 + 28) = $a5;
+			*(struct esf_buf ***)((uint8 *)$a6 + 28) = &ebuf->next;
+
 			ets_intr_unlock();
 
-			$a2 = *(uint32 *)((uint8 *)ebuf + 36);
-			$a2 = *(uint8 *)((uint8 *)$a2 + 6);
-			$a2 = ($a2 >> 4) & 0x7;
-			pp_post($a2);
-			ret = $a2;
-			break;
+			return pp_post((ebuf->ep->data[6] >> 4) & 0x07);
 
 		case 1:
-			$a6 = *(uint32 *)((uint8 *)ebuf + 36);
-			*(uint32 *)((uint8 *)ebuf + 32) = $a5;
-			$a8 = *(uint8 *)((uint8 *)$a6 + 0);
-			$a7 = *(uint32 *)((uint8 *)&soft_wdt_interval + 16);	/* 0x3ffe9114 */
-			$a8 = ($a8 >> 1) & 0x1;
-			$a8 += 8 * $a7;
+			ebuf->next = NULL;
+
+			$a7 = *((uint32 *)0x3ffe9114);	/* main queue array (uint8 *)&soft_wdt_interval + 16 */
+			$a8 = (ebuf->ep->data[0] >> 1) & 0x01;
+			$a8 = $a7 + 8 * $a8;
 			$a8 = *(uint32 *)((uint8 *)$a8 + 0x11c);
-			*(struct esf_buf *)((uint8 *)$a8 + 0) = ebuf;
-			$a6 = *(uint8 *)((uint8 *)$a6 + 0);
-			$a3 = (uint8 *)ebuf + 32;
-			$a6 = ($a6 >> 1) & 0x1;
-			$a6 += 8 * $a7;
-			*(uint32 *)((uint8 *)$a6 + 0x11c) = $a3;
-			ret = 0;
-			break;
+			*(struct esf_buf **)((uint8 *)$a8 + 0) = ebuf;
+
+			$a6 = (ebuf->ep->data[0] >> 1) & 0x01;
+			$a6 = $a7 + 8 * $a6;
+			*(struct esf_buf ***)((uint8 *)$a6 + 0x11c) = &ebuf->next;
+
+			return 0;
 
 		case 2:
-			$a2 = 0x40267490;
-			os_printf_plus($a2);
+			os_printf_plus("map fail\n");
 			ets_intr_lock();
 			ppDiscardMPDU(ebuf);
 			ets_intr_unlock();
-			ret = 1;
-			break;
+
+			return 1;
 
 		default:
-			ret = 0;
-			break;
+			return 0;
 	}
-
-	return ret;
 }
 
 /* 0x40246994 */
@@ -464,7 +565,109 @@ void ICACHE_FLASH_ATTR pp_attach()
 	if ($a5 != 0)
 		$a10 = $a0;
 
-	*(uint32 *)((uint8 *)&soft_wdt_interval + 8) = $a10;
+	*(uint32 *)((uint8 *)&soft_wdt_interval + 8) = $a10;	/* 0x3ff1910c */
 	ets_timer_setfn(0x3ffe90c4, pp_noise_test, 0);
 	pp_enable_noise_timer();
+}
+
+/* <pp_attach+0x100> */
+static int ICACHE_FLASH_ATTR _0x40246a94(struct esf_buf *ebuf)
+{
+	$a0 = ebuf->ep;
+	$a5 = ebuf->type1;
+	$a0 = ebuf->ep->data[13];
+	$a10 = ebuf->len2;
+	$a0 &= 0x0f;
+
+	switch ($a0) {
+		case 0: $a0 = 4;
+			break;
+
+		case 1: $a0 = 8;
+			break;
+
+		case 2: $a0 = 16;
+			break;
+
+		case 3: $a0 = 12;
+			break;
+
+		default: $a0 = 4;
+			 break;
+	}
+
+	$a10 += $a0;
+	ebuf->len2 = $a10;
+	$a11 = 0x00ffffff;
+	$a8 = ebuf->np2;	/* --> not a pbuf!!! */
+	$a10 = 0xff000fff;
+	$a9 = *(volatile *)(&ebuf->np2->len2) += $a0;	/* Convoluted compiler code... */
+	$a6 = *(uint32 *)(ebuf->ep->data + 0);
+	$a3 = 0x40;
+
+	if (!($a6 & (1 << 24))) {
+		$a4 = 0xbf;
+		$a0 = ebuf->np2;
+		$a11 = *(volatile uint8 *)(&ebuf->np2->pad1);
+		$a11 &= 0xbf;
+		$a11 |= 0x40;
+		*(volatile uint8 *)(&ebuf->np2->pad1) = $a11;
+		return 0;
+	}
+
+	if ($a5 == NULL)
+		return 1;
+
+	$a6 = 0x20;
+	$a7 = 0xdf;
+	$a4 = ebuf->np1;
+	$a3 = *(volatile uint8 *)(&ebuf->np1->pad1);
+	$a3 &= 0xdf;
+	$a3 |= 0x20;
+	*(volatile uint8 *)(&ebuf->np1->pad1) = $a3;
+
+	$a0 = ebuf->ep->data[13] & 0x0f;
+
+	if ($a0 != 0 && $a0 != 3) {
+		ets_printf("%s %u\n", "pp.c", 2798);
+		while (1);
+	}
+
+	$a4 = 0x0000fffc;
+	$a3 = ebuf->len2;
+	$a2 = ebuf->np1;
+	$a3 += $a4;
+	$a2 = ebuf->np1->data;
+	$a4 = 0x0000f000;
+	$a0 = *(uint16 *)((uint8 *)$a2 + 0);
+	$a3 &= 0x0fff;
+	$a0 &= 0xf000;
+	$a0 |= $a3;
+	$a3 = *(uint8 *)((uint8 *)$a2 + 2);
+	*(uint16 *)((uint8 *)$a2 + 0) = $a0;
+	$a5 = *(uint8 *)((uint8 *)ebuf->type1 + 116);
+	$a6 = *(uint8 *)((uint8 *)$a2 + 1);
+	$a0 &= 0x0fff;
+	$a8 = $a0 + 4;
+	$a3 <<= 8;
+	$a3 |= $a6;
+
+	if ($a5 < 8) {
+		$a0 = 0;
+	} else {
+		$a0 = $a5 - $a0;
+		$a0 = (signed)$a0 >> 2;
+	}
+
+	$a5 = 0x0000f80f;
+	$a4 = $a0 & 0x7f;
+	$a4 <<= 4;
+	$a3 &= $a5;
+	$a3 |= $a4;
+	*(uint8 *)((uint8 *)$a2 + 1) = $a3;
+	$a4 = 0xcf;
+	$a3 = ($a3 >> 8) & 0xff;
+	$a3 &= $a4;
+	*(uint8 *)((uint8 *)$a2 + 2) = $a3;
+	return 0;
 }
