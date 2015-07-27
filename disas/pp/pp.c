@@ -167,7 +167,7 @@ static struct esf_buf *_0x40102954(uint8 sig)
 	while (1) {
 		$a13 = ~$a14;
 		$a14 = $a13 & $a14;
-		$a13 = _nsau($a13);
+		$a13 = _nsau($a13); /* This is an assembly instruction 'nsau' which idk how to translate in C */
 		$a13 = ~$a13;
 		$a13 += 31;
 
@@ -231,10 +231,174 @@ static void _0x40102a4c(uint8 sig)
 	// stub
 }
 
-/* <ppEnqueueRxq+0x55c> */
-static void _0x40102e08(struct esf_buf *ebuf)
+/* <ppEnqueueRxq+0x3cc> */
+static uint32 _0x40102c78(uint8 arg1)
 {
-	
+
+}
+
+/* <ppEnqueueRxq+0x4fc> */
+static void _0x40102da8()
+{
+	$a15 = 0x3ffe93a1;
+	$a13 = -1;
+	$a12 = *(uint8 *)((uint8 *)$a15 + 0);
+	$a14 = 0;
+
+	do {
+		$a2 = $a12;
+		$a2 = pm_allow_tx($a2);
+
+		if ($a2 != 0) {
+			$a2 = $a12;
+			$a2 = _0x40102c78($a2);	/* <ppEnqueueRxq+0x3cc> */
+
+			if ($a2 != 0)
+				$a13 = $a12;
+		}
+
+		$a0 = *(uint8 *)((uint8 *)0x3ffe93a1 + 0);
+		$a12 += 1;
+		$a12 &= 0xff;
+		$a2 = $a12 - 2;
+
+		if ($a2 == 0)
+			$a12 = $a14;
+
+	} while ($a0 != $a12);
+
+	if ($a13 == -1)
+		return;
+
+	$a0 = $a13 + 1;
+	$a2 = $a0 & 0xff;
+
+	if ($a2 != 2)
+		$a14 = $a0;
+
+	*(uint8 *)((uint8 *)$a15 + 0) = $a14;
+}
+
+/* <ppEnqueueRxq+0x55c> */
+static int _0x40102e08(struct esf_buf *ebuf)
+{
+	struct ieee80211_frame *a1_8;
+	uint32 a1_4;
+	uint32 a1_0;
+
+	$a12 = ebuf;
+	$a0 = ebuf->e_data;
+	a1_8 = $a0;
+	_0x40102da8();	/* <ppEnqueueRxq+0x4fc> */
+
+	$a2 = ebuf->ep->data[0];
+	$a2 = ($a2 >> 1) & 0x1;
+
+	if ($a3 == NULL) {
+		$a3 = *(uint32 *)(ebuf->ep->data + 0);
+		$a3 = ($a3 >> 9) & 0x1;
+
+		if ($a3 == 0) {
+			$a2 = pm_allow_tx($a2);
+
+			if ($a2 == 0) {
+				$a0 = ebuf->ep->data[14];
+
+				if ($a0 != 0x20 && $a0 != 0x40) {
+					pm_post(1);
+					return 1;
+				}
+			}
+		} else {
+			$a2 = pm_allow_tx($a2);
+
+			if ($a2 == 0) {
+				pm_post(1);
+				return 1;
+			}
+		}
+
+		$a2 = ebuf->ep->data[0];
+		$a0 = $a2 & 0xc3;
+		$a2 = ($a2 >> 1) & 0x1;
+		$a2 <<= 2;
+		$a0 |= $a2;
+		ebuf->ep->data[0] = $a0;
+
+		ebuf->ep->data[6] &= 0x8f;
+		ebuf->ep->data[4] &= 0xf0;
+		ebuf->ep->data[4] |= 0x07;
+		return 0;
+	}
+
+	$a3 = ebuf->e_data->i_fc & 0xff;
+	$a3 = ($a3 >> 2) & 0x3;	/* Type in frame control */
+
+	if ($a3 == 0) {
+		/* Management frame */
+		$a2 = pm_allow_tx($a2);
+
+		if ($a2 == 0) {
+			pm_post(1);
+			return 1;
+		}
+
+		$a0 = ebuf->ep->data[0];
+		$a10 = $a0 & 0xc3;
+		$a0 = ($a0 >> 1) & 0x1;
+		$a0 <<= 2;
+		$a10 |= $a0;
+		ebuf->ep->data[0] = $a10;
+
+		ebuf->ep->data[6] &= 0x8f;
+		ebuf->ep->data[4] &= 0xf0;
+		ebuf->ep->data[4] |= 0x07;
+		return 0;
+	}
+
+	$a2 = pm_allow_tx($a2);
+
+	if ($a2 == 0) {
+		$a11 = *(uint32 *)(ebuf->ep->data + 0);
+
+		if ($a11 & (1 << 19)) {
+			pm_post(1);
+			return 1;
+		}
+	}
+
+	ets_intr_lock();
+	$a3 = *(uint8 *)((uint8 *)ebuf->type1 + 118);
+	$a2 = ebuf->ep->data[0];
+	$a5 = ebuf->ep->data[6];
+	$a2 = ($a2 >> 1) & 0x01;
+	$a4 = ebuf->ep->data[4];
+	$a5 = ($a5 >> 4) & 0x07;
+	$a4 &= 0x0f;
+	_0x40102b10($a2, $a3, $a4, $a5);	/* <ppEnqueueRxq+0x264> */
+
+	a1_4 = $a2;
+	ets_intr_unlock();
+
+	$a4 = a1_4;
+	a1_0 = $a4;
+
+	if ($a4 == 8)
+		return 1;
+
+	$a2 = ebuf->ep->data[0];
+	$a2 = ($a2 >> 1) & 0x1;
+	$a2 = pm_allow_tx($a2);
+
+	if ($a2 == 0) {
+		pm_post(1);
+		return 1;
+	}
+
+	$a5 = (a1_0 & 0x0f) << 2;
+	ebuf->ep->data[0] &= 0xc3;
+	ebuf->ep->data[0] |= $a5;
+	return 0;
 }
 
 /* 0x40102f88 */
@@ -453,7 +617,7 @@ int ICACHE_FLASH_ATTR ppTxPkt(struct esf_buf *ebuf)
 	ets_intr_unlock();
 
 	ppCalFrameTimes(ebuf);
-	_0x40102e08(ebuf);
+	$a2 = _0x40102e08(ebuf);
 
 	switch ($a2) {
 		case 0:
@@ -556,7 +720,7 @@ void ICACHE_FLASH_ATTR pp_attach()
 
 	esf_buf_setup();
 	ets_task(_0x40245ce4, 32, 0x3ffe9290, 34);
-	ets_timer_set_fn(0x3ffe90e4, pp_tx_idle_timeout, 0);
+	ets_timer_setfn(0x3ffe90e4, pp_tx_idle_timeout, 0);
 
 	$a5 = *(uint8 *)((uint8 *)&chip6_phy_init_ctrl + 106);
 	$a10 = 600000;

@@ -546,15 +546,24 @@ void wDev_ProcessFiq()
 }
 
 /* 0x401041ac */
-void wDev_EnableTransmit()
+void wDev_EnableTransmit(uint8 arg1, uint8 arg2, uint32 arg3)
 {
-	// stub
+	/* arg2 is unused? */
+	$a8 = 0x3ff20a00;
+	$a7 = (int16)(-24 * arg1);
+	$a7 += $a8;
+	*(volatile uint32 *)((uint8 *)$a7 + 0x3c0) = (arg3 & 0x3ff) << 12;
+	*(volatile uint32 *)((uint8 *)$a7 + 0x3c4) |= 0xc0000000;
+	((uint32 *)0x3ffe9940)[arg1] += 1;
 }
 
 /* 0x401041e8 */
-void wDev_DisableTransmit()
+void wDev_DisableTransmit(uint8 arg1)
 {
-	// stub
+	$a5 = 0x3ff20a00;
+	$a4 = (int16)(-24 * arg1);
+	$a4 += $a5;
+	$a3 = *(volatile uint32 *)((uint8 *)$a4 + 0x3c4) &= 0x3fffffff;
 }
 
 /* 0x40104378 */
