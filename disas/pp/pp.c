@@ -234,7 +234,137 @@ static void _0x40102a4c(uint8 sig)
 /* <ppEnqueueRxq+0x3cc> */
 static uint32 _0x40102c78(uint8 arg1)
 {
+	uint32 a1_60;
+	uint32 a1_32;
 
+	$a13 = arg1;
+	ets_intr_lock();
+	$a12 = *(uint32 *)((uint8 *)0x3ffe8014 + 16);	/* 0x3ffe9114 */
+	$a12 = *(uint32 *)((uint8 *)$a12 + 0);
+	ets_intr_unlock();
+
+	$a15 = 0xff;
+	$a14 = 3;
+	$a14 = $a12 | $a14;
+	$a14 ^= $a15;
+
+	if ($a14 == 0)
+		goto _0x40102d9a;
+
+	$a2 = 0x3ffe8014;
+	$a3 = 0x118;
+	$a2 = *(uint32 *)((uint8 *)0x3ffe8014 + 16);
+	$a15 = $a13 << 3;
+	$a2 = $a2 + 8 * $a13;
+	$a14 = *(uint32 *)((uint8 *)$a2 + 0x118);
+	a1_60 = $a15;
+
+	if ($a14 == 0)
+		goto _0x40102d9a;
+
+	a1_32 = $a14;
+	$a3 = $a2 + $a3;
+	$a0 = 0;
+	*(uint32 *)((uint8 *)$a2 + 0x118) = $a0;
+	*(uint32 *)((uint8 *)$a2 + 0x11c) = $a3;
+	goto _0x40102cca;
+
+_0x40102cca:
+	$a12 = $a14;
+
+	if ($a14 == 0)
+		goto _0x40102d89;
+
+	$a5 = *(uint32 *)((uint8 *)$a12 + 28);
+	$a14 = *(uint32 *)((uint8 *)$a14 + 32);
+	a1_32 = $a14;
+	*(uint32 *)((uint8 *)$a12 + 32) = $a0;
+
+	if ($a5 != 0)
+		goto _0x40102ce4;
+
+	$a13 = *(uint32 *)((uint8 *)$a12 + 36);
+	$a13 = *(uint8 *)((uint8 *)$a13 + 0);
+	$a13 = ($a13 >> 1) & 0x1;
+	goto _0x40102d10;
+
+_0x40102ce4:
+	ets_intr_lock();
+	$a3 = *(uint32 *)((uint8 *)$a12 + 28);
+	$a4 = *(uint32 *)((uint8 *)$a12 + 36);
+	$a3 = *(uint8 *)((uint8 *)$a3 + 0x118);
+	$a2 = *(uint8 *)((uint8 *)$a4 + 0);
+	$a5 = *(uint8 *)((uint8 *)$a4 + 6);
+	$a2 = ($a2 >> 1) & 0x1;
+	$a4 = *(uint8 *)((uint8 *)$a4 + 4);
+	$a5 = ($a5 >> 4) & 0x07;
+	$a4 &= 0x0f;
+	/* $a2 = */ _0x40102b10($a2, $a3, $a4, $a5);
+	$a13 = $a2;
+	ets_intr_unlock();
+	$a0 = 0;
+	goto _0x40102d10;
+
+_0x40102d10:
+	$a15 = $a12 + 32;
+
+	if ($a13 != 8)
+		goto _0x40102d2c;
+
+	$a4 = 0x3ffe8014;
+	$a5 = a1_60;
+	$a4 = *(uint32 *)((uint8 *)$a4 + 16);
+	$a4 += $a5;
+	$a5 = *(uint32 *)((uint8 *)$a4 + 0x11c);
+	*(uint32 *)((uint8 *)$a12 + 32) = $a0;
+	*(uint32 *)((uint8 *)$a5 + 0) = $a12;
+	*(uint32 *)((uint8 *)$a4 + 0x11c) = $a15;
+	goto _0x40102cca;
+
+_0x40102d2c:
+	$a8 = 0xc3;
+	$a6 = *(uint32 *)((uint8 *)$a12 + 36);
+	$a7 = $a13 & 0x0f;
+	$a5 = *(uint8 *)((uint8 *)$a6 + 0);
+	$a7 <<= 2;
+	$a5 &= $a8;
+	$a5 |= $a7;
+	$a5 = *(uint8 *)((uint8 *)$a6 + 0);
+	ets_intr_lock();
+	$a13 = 0x3ffe8014;
+	$a9 = *(uint32 *)((uint8 *)$a12 + 36);
+	$a11 = 0;
+	*(uint32 *)((uint8 *)$a12 + 32) = $a11;
+	$a10 = *(uint8 *)((uint8 *)$a9 + 0);
+	$a8 = *(uint32 *)((uint8 *)$a13 + 16);
+	$a10 = ($a10 >> 2) & 0x0f;
+	$a10 <<= 5;
+	$a10 = $a8 + $a10;
+	$a10 = *(uint32 *)((uint8 *)$a10 + 28);
+	*(uint32 *)((uint8 *)$a10 + 0) = $a12;
+	$a9 = *(uint8 *)((uint8 *)$a9 + 0);
+	$a9 = ($a9 >> 2) & 0x0f;
+	$a9 <<= 5;
+	$a8 += $a9;
+	*(uint32 *)((uint8 *)$a8 + 28) = $a15;
+	ets_intr_unlock();
+	$a2 = *(uint32 *)((uint8 *)$a12 + 36);
+	$a2 = *(uint8 *)((uint8 *)$a2 + 6);
+	$a2 = ($a2 >> 4) & 0x07;
+	pp_post($a2);
+	$a0 = 0;
+	goto _0x40102cca;
+
+_0x40102d89:
+	$a2 = 1;
+	goto _0x40102d8b;
+
+_0x40102d8b:
+	return $a2;
+
+_0x40102d9a:
+	$a2 = 0;
+	goto _0x40102d8b;
 }
 
 /* <ppEnqueueRxq+0x4fc> */
@@ -375,7 +505,7 @@ static int _0x40102e08(struct esf_buf *ebuf)
 	$a4 = ebuf->ep->data[4];
 	$a5 = ($a5 >> 4) & 0x07;
 	$a4 &= 0x0f;
-	_0x40102b10($a2, $a3, $a4, $a5);	/* <ppEnqueueRxq+0x264> */
+	/* $a2 = */ _0x40102b10($a2, $a3, $a4, $a5);	/* <ppEnqueueRxq+0x264> */
 
 	a1_4 = $a2;
 	ets_intr_unlock();
