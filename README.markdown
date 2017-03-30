@@ -57,6 +57,8 @@ here and there. Please let me know if you find something interesting.
 NOTES
 -----
 
+Update: Better method for hooking into ppEnqueueRxq https://github.com/ernacktob/esp8266_wifi_raw/issues/1
+
 This program requires a modified libnet80211 and libpp library, which we called libnet80211_2.a and libpp2.a.
 The modified libraries can be seen in the lib/ folder.
 
