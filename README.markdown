@@ -2,6 +2,8 @@ This is an experiment attempting to send and receive raw IEEE-802.11 packets fro
 
 This is currently a dirty hack, and not quite perfect.
 
+DISCLAIMER: THIS IS A PROOF OF CONCEPT ONLY. USE AT YOUR OWN RISK!
+
 SENDING
 --------
 
@@ -22,17 +24,17 @@ may return an error. We don't know why.
 RECEIVING
 ---------
 
-The method currently allows the device to enter in monitor mode, and sniff every packet
+~~The method currently allows the device to enter in monitor mode, and sniff every packet
 that can be found in the air, including control and management frames. There are no
 limitations on the packet size as in the official sniffer APIs. You have access to
-the complete frame.
+the complete frame.~~
 
 Make sure you are listening in the correct channel and PHY mode.
 Note that the ESP8266 does not seem to support the 5GHz wifi.
 
 Update: It turns out the method only sniffs frames which are broadcast or directed to
 	the device's own MAC address. It is not in promiscuous mode, so it can't receive
-	all packets send over the air. It does receive the complete frames for packets
+	all packets sent over the air. It does receive the complete frames for packets
 	that are actually processed by the driver. If we set the device to promiscuous
 	mode (using wifi_enable_promiscuous(1)) the callback we set up does not get called anymore.
 	It seems promiscuous mode is dealt with differently, and the hardware may not be able
