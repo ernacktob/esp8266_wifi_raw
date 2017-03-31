@@ -41,7 +41,7 @@ LIBS		= c gcc hal pp phy net80211 lwip wpa main
 CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
-LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static -Wl,-wrap=ppEnqueueRxq -Wl,-wrap=ppTxPkt
 
 # linker script used for the above linkier step
 LD_SCRIPT	= eagle.app.v6.ld

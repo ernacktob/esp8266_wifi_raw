@@ -11,8 +11,6 @@
 #define SOFTAP_IF	0x01
 #define SOFTAP_MODE	0x02
 
-extern void ICACHE_FLASH_ATTR ppTxPkt(void *);
-extern void ICACHE_FLASH_ATTR ppEnqueueRxq(void *);
 
 static int called = 0;
 static wifi_raw_recv_cb_fn rx_func = NULL;
@@ -24,7 +22,7 @@ static wifi_raw_recv_cb_fn rx_func = NULL;
    My guess is that this is some kind of interrupt
    that should execute as fast as possible, and
    ICACHE_FLASH_ATTR stores it in a slower-to-access location... */
-void aaEnqueueRxq(void *a)
+void __wrap_ppEnqueueRxq(void *a)
 {
 	// int i;
 	// for (i = 0; i < 30; i++){
@@ -47,13 +45,13 @@ void aaEnqueueRxq(void *a)
 	if (rx_func)
 		rx_func((struct RxPacket *)(((void **)a)[4]));
 
-	ppEnqueueRxq(a);
+	__real_ppEnqueueRxq(a);
 }
 
 /* Warning: this is an experiment, and relies
    on undocumented library calls. Might not work as expected,
    and not guaranteed to work in any other sdk version... */
-void ICACHE_FLASH_ATTR aaTxPkt(void *buf, uint16 len)
+void ICACHE_FLASH_ATTR __wrap_ppTxPkt(void *buf, uint16 len)
 {
 	static int level = 0;
 	static void *upper_buf;
@@ -63,7 +61,7 @@ void ICACHE_FLASH_ATTR aaTxPkt(void *buf, uint16 len)
 	    just behave exactly like ppTxPkt. */
 	/* this might need a mutex... */
 	if (!called) {
-		ppTxPkt(buf); //library function call normally without our interception
+		__real_ppTxPkt(buf); //library function call normally without our interception
 		return;
 	}
 
@@ -93,7 +91,7 @@ void ICACHE_FLASH_ATTR aaTxPkt(void *buf, uint16 len)
 
 		level = 1;
 
-		/* Go down one level into ieee80211_output_pbuf. 
+		/* Go down one level into ieee80211_output_pbuf.
 		ieee80211_output_pbuf calls aaTxPkt because the libnet80211_2 has all references to
 		ppTxPkt modified to our aaTxPkt instead*/
 		if (ieee80211_output_pbuf(ifp, pb))
@@ -109,7 +107,7 @@ void ICACHE_FLASH_ATTR aaTxPkt(void *buf, uint16 len)
 				   the packet data in the appropriate memory addresses. */
 
 		memcpy(((uint8 **)buf)[4], upper_buf, upper_len);
-		ppTxPkt(buf);
+		__real_ppTxPkt(buf);
 	}
 }
 
@@ -128,17 +126,17 @@ void ICACHE_FLASH_ATTR wifi_send_raw_packet(void *data, uint16 len)
 	/* Save current opmode and switch to SOFTAP_MODE */
 	uint8 mode;
 	mode = wifi_get_opmode();
-	//Need softap mode in order to send 
+	//Need softap mode in order to send
 	wifi_set_opmode(SOFTAP_MODE);
 
 	/* this also needs a mutex */
-	//pptx packet could get called by something other than 
+	//pptx packet could get called by something other than
 	//our send packet function
 	called = 1;
-	aaTxPkt(data, len); //sending a raw packet with data, length
+	__wrap_ppTxPkt(data, len); //sending a raw packet with data, length
 	called = 0;
 
-	//Restoring previous opmode 
+	//Restoring previous opmode
 	wifi_set_opmode(mode);
 	//Restoring rx_func after sending
 	rx_func = recv_func;

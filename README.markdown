@@ -4,7 +4,7 @@ This is currently a dirty hack, and not quite perfect.
 
 DISCLAIMER: THIS IS A PROOF OF CONCEPT ONLY. USE AT YOUR OWN RISK!
 
-The code in this project was compiled and linked against the esp_iot_sdk_v1.2.0.
+The code in this project was compiled and linked against the esp_iot_sdk_v1.2.0. and also works with esp_iot_sdk_v0.9.3.
 
 SENDING
 --------
@@ -59,9 +59,9 @@ here and there. Please let me know if you find something interesting.
 NOTES
 -----
 
-Update: Better method for hooking into ppEnqueueRxq https://github.com/ernacktob/esp8266_wifi_raw/issues/1
+Update: Better method for hooking into ppEnqueueRxq and ppTxPkt https://github.com/ernacktob/esp8266_wifi_raw/issues/1
 
-This program requires a modified libnet80211 and libpp library, which we called libnet80211_2.a and libpp2.a.
+<strike>This program requires a modified libnet80211 and libpp library, which we called libnet80211_2.a and libpp2.a.
 The modified libraries can be seen in the lib/ folder.
 
 The modified net80211 library has its symbol table changed so that all references to ppTxPkt
@@ -77,4 +77,6 @@ the actual function definition, and this one should not be changed. Follow these
 `sed s/ppTxPkt/aaTxPkt/g2 libpp.a > libpp2.a`
 
 The Makefile must also be modified to link to net80211_2 and pp2 instead of net80211 and pp.
-Use `make -f Makefile2` to build, or run the `./compile_and_flash` script (pass the port as a command line argument).
+Use `make -f Makefile2` to build, or run the `./compile_and_flash` script (pass the port as a command line argument).</strike>
+
+The makefile is modified in order to wrap the ppTxPkt and ppEnqueueRxq functions (see LDFLAGS).
