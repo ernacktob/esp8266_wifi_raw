@@ -4,6 +4,8 @@ This is currently a dirty hack, and not quite perfect.
 
 DISCLAIMER: THIS IS A PROOF OF CONCEPT ONLY. USE AT YOUR OWN RISK!
 
+The code in this project was compiled and linked against the esp_iot_sdk_v1.2.0.
+
 SENDING
 --------
 
